@@ -1,3 +1,12 @@
-multiprocessing
+multiprocess
 numpy
-pywt
+PyWavelets
+scipy
+pandas
+os
+math
+time
+requests
+json
+twisted
+skimage

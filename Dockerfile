@@ -23,13 +23,17 @@ COPY requirements.txt requirements.txt
 RUN conda install pip
 RUN apt-get install -y python-dev
 RUN apt-get install -y python3-dev
-# RUN apt install -y build-essential
-# RUN apt-get install -y libssl-dev
-# RUN pip3 install service_identity
-RUN pip3 install -r requirements.txt
+RUN apt install -y build-essential
+RUN apt-get install -y libssl-dev
+RUN pip3 install service_identity
+RUN conda install -r requirements.txt
 RUN apt-get -y update
 RUN apt-get -y upgrade
 # COPY functions.py functions.py
 COPY k2so.py k2so.py
+COPY ./k2s0_tad ./k2s0_tad
+COPY ./logic_files ./logic_files
+COPY ./configuration_files ./configuration_files
+RUN pip3 install /k2s0_tad
 # CMD [ "python3", "k2so.py", "-s", "1" ]
-CMD [ "/bin/bash" ]
+CMD echo "Test"
