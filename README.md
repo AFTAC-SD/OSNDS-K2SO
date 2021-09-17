@@ -8,7 +8,9 @@ docker build --tag=osnds-k2so .
 ## Run command
  This image maintains the capability to utilize command line arguments, such as station numbers.  As such the command to create and run the container is required to have a station number appended to the end:
 
+'''
 docker run --privileged -d -it --rm osnds-k2so 1
+'''
 
 Or in the case of multiple stations
 
