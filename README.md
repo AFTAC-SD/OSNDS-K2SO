@@ -15,4 +15,4 @@ Or in the case of multiple stations
 docker run --privileged -d -it --rm osnds-k2so 1 2
 
 This run command will auto delete the container at the end of the run.  If you would like to have a full console debug level logging session running, simply omit the '-d' argument.
-S
+
