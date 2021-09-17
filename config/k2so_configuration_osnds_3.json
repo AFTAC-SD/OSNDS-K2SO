@@ -38,17 +38,21 @@
 		"host":"storage.osnds.net",
 		"port":8086,
 		"database":"livestream_test",
+		"retention":"five_days_only",
+		"measurment":"osnds_station_3",
 		"username":"",
 		"password":""
 	},
 	"k2s0":{
-		"debug":true,
+		"debug":false,
 		"time_window_s":10,
 		"data_pull_rate_s":3,
 		"anomaly_threshold":3,
 		"buffer":2000,
-		"trigger_cooldown_s":1,
+		"trigger_cooldown_s":7,
 		"median_update_rate_m":10,
+		"median_window_m":2,
+		"data_stream":"seismic",
 		"sensor":"acceleration",
 		"last_event_id":0
 	},

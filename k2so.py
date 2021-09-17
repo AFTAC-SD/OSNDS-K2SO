@@ -16,7 +16,7 @@
 # 
 # K-2SO is ultimately called and executed by this script. You can call it by running the following comamand from within the project folder:
 # 
-#     python k2so -s [stations]
+#     python k2so.py -s [stations]
 #
 # wherein the "-s" is an argument flag for "stations", as in which stations you would like k2so to monitor against.
 # You must follow this flag by each station's ID, separated by spaces (single-word alphaumerics are accepted). For example:
@@ -31,14 +31,14 @@
 import sys, os, time, argparse
 from multiprocessing import Pool
 
-#sys.path.insert(0, r'/anomaly_detection/k2s0_python/logic_files')
-from logic_files import k2s0_logic as k2_min
+#sys.path.insert(0, r'/anomaly_detection/k2s0_python/src')
+from src import logic as k2
 
 # This function runs separate instances of k2so for each identified sensor specified by the command line 
 def k2so(station):
 	#station, debug = arguments  # first attempt to tuple/untuple arguments through a mapped process - may/may not work OOB
-	#k2.run(station)
-	k2_min.run(station)
+	k2.run(station)
+	#k2_min.run(station)
 	return
 
 
@@ -90,9 +90,9 @@ if __name__ == "__main__":
                                         \|_________|         """)
 
 	print("\nK-2S0 was collaboratively written by the great folks over in\nAFTAC/SI:\n")
-	print("    - James Stroup, Branch Chief (Tech. Exploitation and Development)")
-	print("    - Edmund Robbins, R&D Portfolio Manager (AI/ML)")
-	print("    - Capt Samuel Stevens, Deputy Branch Chief (Tech. Exploitation and Development)")
+	print("    - James Stroup, R&D Portfolio Manager (AI/ML)")
+	print("    - Edmund Robbins, PhD Candidate (Applied Mathematics)")
+	print("    - Capt Samuel Stevens, Deputy Branch Chief (Partnering)")
 
 	#if debug_mode[0] in debug_bool:
 

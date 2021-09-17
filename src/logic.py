@@ -19,7 +19,7 @@
 # 
 # This code is ultimately called and executed from another script "k2so.py.  You can call k2so.py via:
 # 
-#     python k2so -s [stations]
+#     python k2so.py -s [stations]
 #
 # Wherein the "-s" is an argument flag for "stations", as in which stations you would like k2so to monitor against. 
 # You must follow this flag by each station's ID, separated by spaces (single-word alphaumerics are accepted). For example:
@@ -28,12 +28,12 @@
 # 
 # We will soon be adding a "-d" argument to the scripts execution that will force K2SO to operate in a DEBUG MODE. This mode will provide the
 # end user with a log of K-2SO's output labed by Station ID. This feature is still in work. 
-#
+
 
 import warnings
 from numpy.core.numeric import NaN
 #from scipy.signal import waveforms, wavelets
-from logic_files import k2s0_file_handler as k2_file
+from src import file_handler as logic
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -47,14 +47,14 @@ from influxdb import DataFrameClient
 from twisted.internet import task, reactor
 
 from skimage.restoration import denoise_wavelet, estimate_sigma
+from pprint import pprint
 
-pd.set_option('display.max_rows', 1000)
-
+pd.set_option('display.max_rows', 4000)
 
 
 
 class DataStore():
-
+	dict = []
 	last_event_id = 0
 
 	previous_valid_first_index = 0
@@ -82,7 +82,7 @@ class Settings():
 	config = None
 	station = 0
 	trigger_cooldown = 0
-	debug = False
+	debug = True
 	filter_coefficients = None
 
 
@@ -101,7 +101,7 @@ def initialize_k2so():
 	# All of k2so's settings (with the exception of which stations you;re running against) are assignable in the JSON file
 	# This function loads the JSON file and stores all of the user settings as a list, "config"
 	
-	station_configuration = str('configuration_files/k2so_configuration_osnds_'+settings.station+'.json')
+	station_configuration = str('config/k2so_configuration_osnds_'+settings.station+'.json')
 
 	print('\nOSNDS Station {0}: Attempting to load configuration file'.format(settings.station)) if settings.debug == True else None
 
@@ -113,9 +113,10 @@ def initialize_k2so():
 
 				settings.config = json.load(config)
 
-			except:
+			except Exception as e:
 
 				print('\nOSNDS Station {0}: There was an error parsing the configuration file'.format(settings.station)) if settings.debug == True else None
+				print('                 Error: {0}'.format(e)) if settings.debug == True else None
 
 				kill = True
 
@@ -124,15 +125,16 @@ def initialize_k2so():
 		print('\nOSNDS Station {0}: The configuration file has been loaded'.format(settings.station)) if settings.debug == True else None
 		
 
-	except FileNotFoundError:
+	except FileNotFoundError as f:
 		
 		print('\nOSNDS Station {0}: There appears to be no configuration file for\n                 this station. Please ensure that the following\n                 file exists:\n\n                 {1}'.format(settings.station, station_configuration))
+		print('                 Error: {0}'.format(f)) if settings.debug == True else None
 
 		kill = True
 
 		return kill
 
-	kill = k2_file.file_handler(settings.station, settings.config)
+	kill = logic.file_handler(settings.station, settings.config)
 
 	if kill == True:
 
@@ -146,9 +148,10 @@ def initialize_k2so():
 								username = settings.config['influx']['username'],    # (default) <redacted>
 								password = settings.config['influx']['password'],)   # (default) <redacted>
 
-	except:
+	except Exception as e:
 	
 		print('\nOSNDS Station {0}: There was an error initializing the client\n                 Please check your connection settings'.format(settings.station))
+		print('                 Error: {0}'.format(e)) if settings.debug == True else None
 
 		kill = True
 
@@ -170,16 +173,16 @@ def initialize_k2so():
 	settings.trigger_cooldown = settings.config['k2s0']['trigger_cooldown_s']*10**9
 	settings.debug = settings.config['k2s0']['debug']
 	
-	influx.query_median = str("SELECT median(x), median(y), median(z) FROM livestream_test.five_days_only.osnds_station_1 WHERE time > now()-2m AND data='seismic';".format(settings.station,settings.config['k2s0']['sensor']))
-	print(influx.query_median)
+	influx.query_median = str("SELECT median(x), median(y), median(z) FROM {0}.{1}.{2} WHERE time > now()-{3}m AND data='{4}';".format(settings.config['influx']['database'], settings.config['influx']['retention'], settings.config['influx']['measurment'], str(settings.config['k2s0']['median_window_m']), settings.config['k2s0']['data_stream']))
+
 	# query, compute, and store the median values (based upon the query above)
 	kill = pull_medianValues()    
 
 	# Influx will perform math for you. In this instance, InfluxDB is being asked to subtract the median values of X, Y, and Z from all future data pulls (respectively)
 	# All three components are then added together. This is to ensure that k2so triggers off of an anomaly in any component
 
-	influx.query_data = str("SELECT (x-({0})) + (y-({1})) + (z-({2})) FROM livestream_test.five_days_only.osnds_station_1 WHERE time > now()-{3}s AND data='seismic' fill(previous);".format(str(data.med_x),str(data.med_y),str(data.med_z),str(settings.config['k2s0']['time_window_s']),settings.station,settings.config['k2s0']['sensor']))
-	print(influx.query_median)
+	influx.query_data = str("SELECT (x-({0})) + (y-({1})) + (z-({2})) FROM {3}.{4}.{5} WHERE time > now()-{6}s AND data='{7}' fill(previous);".format(str(data.med_x),str(data.med_y),str(data.med_z),settings.config['influx']['database'], settings.config['influx']['retention'], settings.config['influx']['measurment'], str(settings.config['k2s0']['time_window_s']), settings.config['k2s0']['data_stream']))
+
 	#k2s0_arguments = (settings.station, influx.query_data, influx.client, settings.config)
 
 	if kill == True:
@@ -202,15 +205,14 @@ def pull_medianValues():
 		# this try statement catches an error where the Influx DataFrameClient is unable to run the specified query
 		# this error will only occur if there is an issue with the client settings or query syntax
 		try:
-
+			#print(influx.query_median)
 			response = influx.client.query(influx.query_median)     # send the initialization query to InfluxDB
-			print(response)
 			
 			# this try statement catches an error where the Influx DataFrameClient successfully connected to the database but there was no data to pull
 			# this happens when the user points k2s0 to a station that either doesnt exist or is currently offline
 			try:
 				
-				median_values = response['osnds_station_1']              # get the "livestream" dataframe from the returned list of dataframes "response"
+				median_values = response[settings.config['influx']['measurment']]              # get the "livestream" dataframe from the returned list of dataframes "response"
 
 				data.med_x = median_values.loc[:,'median'][0]       # get the median of X from the dataframe
 				data.med_y = median_values.loc[:,'median_1'][0]     # get the median of Y from the dataframe
@@ -218,16 +220,18 @@ def pull_medianValues():
 
 				kill = False
 
-			except:
+			except Exception as e:
 
-				print('\nOSNDS Station {0}: The station appears to be offline at the moment'.format(settings.station))
+				print('\nOSNDS Station {0}: The station appears to be offline at the moment (pull: median)'.format(settings.station))
+				print('                 Error: {0}'.format(e)) if settings.debug == True else None
 
 				kill = True
 				return kill
 
-		except:
+		except Exception as e:
 
-			print('\nOSNDS Station {0}: The Influx client experienced an error'.format(settings.station))
+			print('\nOSNDS Station {0}: The Influx client experienced an error retrieving the median values'.format(settings.station))
+			print('                 Error: {0}'.format(e)) if settings.debug == True else None
 
 			kill = True
 			return kill
@@ -241,7 +245,7 @@ def pull_medianValues():
 
 		# get new median values
 		response = influx.client.query(influx.query_median)     # send the initialization query to InfluxDB
-		median_values = response['osnds_station_1']                  # get the "livestream" dataframe from the returned list of dataframes "response"
+		median_values = response[settings.config['influx']['measurment']]                  # get the "livestream" dataframe from the returned list of dataframes "response"
 
 		# store new median values in a temporary variables
 		current_med_x = median_values.loc[:,'median'][0]        # get the median of X from the dataframe
@@ -260,11 +264,11 @@ def pull_medianValues():
 
 
 def pull_fromInflux():
-	
+	#print(influx.query_data)
 	response = influx.client.query(influx.query_data)            # send the initialization query to InfluxDB
 
 	try:
-		signal = response['osnds_station_1']                          # get the "livestream" dataframe from the returned list of dataframes "response"
+		signal = response[settings.config['influx']['measurment']]                          # get the "livestream" dataframe from the returned list of dataframes "response"
 	
 		if signal.isnull().values.any() == False:                # validate that there are no "NA" values within the dataframe
 
@@ -290,9 +294,10 @@ def pull_fromInflux():
 
 		return
 
-	except KeyError:
+	except KeyError as k:
 
-		print('\nOSNDS Station {0}: X - The station appears to be offline at the moment.'.format(settings.station))
+		print('\nOSNDS Station {0}: X - The station appears to be offline at the moment (pull: live).'.format(settings.station))
+		print('                 Error: {0}'.format(k)) if settings.debug == True else None
 
 		return
 
@@ -326,13 +331,13 @@ def filter_waveform():
 
 		# Skimage's wavelet filter 
 		sigma_est = estimate_sigma(	image = data.waveform['filtered'],     # in this case, we are treating our 1D signal array as an image with a depth of 1-pixel and a length of n-pixels
-									multichannel=False)                     # color images are mutli-channeled (R, G, B) whereas black/white images (or in our case a 1D signal array) are single-channeled
+									multichannel=False)                     # color images are mutli-channeled (R, loop_value, B) whereas black/white images (or in our case a 1D signal array) are single-channeled
 
 		data.waveform['filtered'] = denoise_wavelet(
 									image = data.waveform['filtered'],                                      # in this case, we are treating our 1D signal array as an image with a depth of 1-pixel and a length of n-pixels 
 									sigma = sigma_est,                                                      # here we are incorporating the estimated sigma for the median-filtered signal
 									wavelet = settings.config['filtering']['wavelet_filter']['wavelet'],    # 
-									multichannel = False,                                                   # color images are mutli-channeled (R, G, B) whereas black/white images (or in our case a 1D signal array) are single-channeled
+									multichannel = False,                                                   # color images are mutli-channeled (R, loop_value, B) whereas black/white images (or in our case a 1D signal array) are single-channeled
 									rescale_sigma = True,                                                   # 
 									method = settings.config['filtering']['wavelet_filter']['method'],      # 
 									mode = settings.config['filtering']['wavelet_filter']['thresholding'])  # 
@@ -390,7 +395,6 @@ def detect_anomalies():
 
 	if len(anomalies) > settings.config['k2s0']['anomaly_threshold']:    # serves as a basic filter for random suprious "anomalies" that can arise from any of the detection algorithims
 
-		print("I'm about to get crazy! Hold my beer...")
 		data.waveform['anomalies'] = anomalies
 		data.waveform['anomalies'] = data.waveform['anomalies'].notna()  # replaces NA values with boolean False, True values stay True
 
@@ -404,6 +408,7 @@ def detect_anomalies():
 		data.waveform['anomalies'] = False  # ensures that (in the case of no anomalies) all 'anomalies' values are False
 		data.waveform['id'] = NaN
 		data.waveform['reported'] = NaN
+		data.waveform['grafanaID'] = NaN
 
 		return
 
@@ -422,42 +427,46 @@ def error_handling():
 	return
 
 
+def filter_dataframe_by_val(df,dict,val):
+	return (df.loc[df[dict]==val])
 
-def parse_anomalies():
+def parse_anomalies():	#just assigns event_ID to the events
 
-	for i, g in data.waveform.groupby([(data.waveform.anomalies != data.waveform.anomalies.shift()).cumsum()]):
+	anomalies_found_table = filter_dataframe_by_val(data.waveform,'anomalies',True)
+	for index, loop_value in data.waveform.groupby([(data.waveform.anomalies != data.waveform.anomalies.shift()).cumsum()]):
 
-		if g.anomalies.all() == True:
+		if loop_value.anomalies.all() == True:
 			
 			# has this anomaly group already been reported to OSNDS?
-			if data.waveform.loc[g.first_valid_index():g.last_valid_index(),'reported'].sum() > 0:
+			if data.waveform.loc[loop_value.first_valid_index():loop_value.last_valid_index(),'reported'].sum() > 0:
 
 				pass
 
 			else:
 
 				# is this anomaly group part of the previous anomaly group?
-				if (float(g.first_valid_index().value) <= (data.previous_valid_last_value + settings.trigger_cooldown)):
+				# print('settings.trigger_cooldown',settings.trigger_cooldown)
+				if (float(loop_value.first_valid_index().value) <= (data.previous_valid_last_value + settings.trigger_cooldown)):
 
-					data.waveform.loc[data.previous_valid_first_index:g.last_valid_index(),'id'] = int(data.last_event_id)
-					data.previous_valid_last_index = g.last_valid_index()
-					data.previous_valid_last_value = g.last_valid_index().value
+					data.waveform.loc[data.previous_valid_first_index:loop_value.last_valid_index(),'id'] = int(data.last_event_id)
+					data.previous_valid_last_index = loop_value.last_valid_index()
+					data.previous_valid_last_value = loop_value.last_valid_index().value
 
 				else:
 
 					data.last_event_id = data.last_event_id + 1
 
 					# saves the current unique event ID to a new column within the dataframe called "id" - this event id is only applied to the indexes
-					# bounded by the groupby function (e.g. start index for group g = g.first_valid_index | ending index for group g = g.last_valid_index)
-					data.waveform.loc[g.first_valid_index():g.last_valid_index(),'id'] = int(data.last_event_id)
+					# bounded by the groupby function (e.loop_value. start index for group loop_value = loop_value.first_valid_index | ending index for group loop_value = loop_value.last_valid_index)
+					data.waveform.loc[loop_value.first_valid_index():loop_value.last_valid_index(),'id'] = int(data.last_event_id)
 					
 					# store the timestamp of the first anomalous amplitude within the anomaly group
-					data.previous_valid_first_index = g.first_valid_index()
-					data.previous_valid_first_value = g.first_valid_index().value
+					data.previous_valid_first_index = loop_value.first_valid_index()
+					data.previous_valid_first_value = loop_value.first_valid_index().value
 
 					# store the timestamp of the last anomalous amplitude within the anomaly group
-					data.previous_valid_last_index = g.last_valid_index()
-					data.previous_valid_last_value = g.last_valid_index().value
+					data.previous_valid_last_index = loop_value.last_valid_index()
+					data.previous_valid_last_value = loop_value.last_valid_index().value
 	
 	data.waveform['id'].fillna(0)
 
@@ -470,40 +479,47 @@ def send_alert(alert_message):
 	alert_payload = {}
 
 	alert_url = "https://config.osnds.net/api/alerts"  # OSNDS API URL for alerts (see Node-Red or NiFi for message handling)
-
+	utc_local_offset = ('{}{:0>2}{:0>2}'.format('-' if time.altzone > 0 else '+', abs(time.altzone) // 3600, abs(time.altzone // 60) % 60))
 	if alert_message['status'] == 'new':
 
 		alert_payload = {
-			"station"	:	settings.station,           # which station the event occurred on
-			"event_id"	:	alert_message['id'],    # unique event ID
+			"station"	:	int(settings.station),           # which station the event occurred on
+			"k2so_id"	:	alert_message['id'],    # unique event ID
 			"start_ns"	:	alert_message['start_ns'],              # start time in nanoseconds since epoch
 			"stop_ns"	:	alert_message['stop_ns'],                # stop time in nanoseconds since epoch
-			"start_real":	alert_message['start_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), 
+			"start_real":	alert_message['start_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), # new startreal
+			"rss_time"	: 	alert_message['start_real'].strftime("%a, %d %b %Y %H:%M:%S {}").format(utc_local_offset), # new startreal
 			"message"	:	alert_message['status']                 # general event message (this is mostly a placeholder)
 		}
 
 	if alert_message['status'] == 'update':
 
 		alert_payload = {
-			"ID"		:	alert_message['grafanaID'],
+			"grafana_id"		:	alert_message['grafanaID'],
+			"k2so_id"	:	alert_message['id'],    # unique event ID
+			"start_ns"	:	alert_message['start_ns'],
 			"stop_ns"	:	alert_message['stop_ns'],
+			"start_real":	alert_message['start_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), 	#start stopreal			
+			"rss_time"	: 	alert_message['start_real'].strftime("%a, %d %b %Y %H:%M:%S {}").format(utc_local_offset), # new startreal
 			"message"	: 	alert_message['status'] 
 		}
 	
 	if alert_message['status'] == 'stop':
 
 		alert_payload = {
-			"station"	:	settings.station,
-			"event_id"	:	alert_message['id'],    # unique event ID
+			"station"	:	int(settings.station),
+			"k2so_id"	:	alert_message['id'],    # unique event ID
+			"start_ns"	:	alert_message['start_ns'],
 			"stop_ns"	:	alert_message['stop_ns'],
 			"message"	: 	alert_message['status'],
-			"stop_real":	alert_message['stop_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), 
-			"ID"		:	alert_message['grafanaID'],
+			"start_real":	alert_message['start_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), 	#start stopreal			
+			"stop_real":	alert_message['stop_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), 	#stop stopreal
+			"rss_time"	: 	alert_message['start_real'].strftime("%a, %d %b %Y %H:%M:%S {}").format(utc_local_offset), # new startreal
+			"grafana_id"		:	alert_message['grafanaID'],
 		}
 	
 	try:
 
-		print(alert_url, alert_payload)
 		alert_post = requests.post(alert_url, json=alert_payload, timeout = 1)  # post message payload to the API URL and store the response
 		
 		print('\nOSNDS Station {0}: API POST returned with code ({1}) and repsonse ({2})'.format(settings.station, alert_post.status_code, alert_post.text)) if settings.debug == True else None
@@ -522,150 +538,138 @@ def send_alert(alert_message):
 			
 				return alert_post.status_code
 		
-			print('\nOSNDS Station {0}: A new anomaly has been reported:\n    Event ID:        {1}\n    Start Time (ns): {2}\n    End Time (ns):   {3}'.format(settings.station, data.last_event_id, alert_message['start_ns'], alert_message['stop_ns'])) if settings.debug == True else None
+			print('\nOSNDS Station {0}: A new anomaly has been reported:\n    Event ID:        {1}\n    Start Time (ns): {2}\n    End Time (ns):   {3}'.format(settings.station, data.last_event_id, alert_message['start_ns'], alert_message['stop_ns'])) #if settings.debug == True else None
 		
 		else:
 
 			print('\nOSNDS Station {0}: A new anomaly has been detected but failed to be reported to OSNDS (Status Code: {1})'.format(settings.station, alert_post.status_code))
 		
-	except:
+	except Exception as e:
 
-		print('\nOSNDS Station {0}: A new anomaly has been detected but failed to be reported to OSNDS - please check internet connection'.format(settings.station, alert_post.status_code))
-
+		print('\nOSNDS Station {0}: A new anomaly has been detected but failed to be reported to OSNDS - please check internet connection'.format(settings.station))
+		print('                 Error: {0}'.format(e)) if settings.debug == True else None
 	return 
-
-
 
 def event_publisher():
 
-	print('\nOSNDS Station {0}: Scanning for anomalies'.format(settings.station)) if settings.debug == True else None
+	# event publisher operates by using a list of dictionaries.  each detected event is group into a single entry in the list.
 
 	if data.waveform.empty:
-
 		pass
-
 	else:
-		
-		try:
-			
-			unique_event_numbers = data.waveform.id.unique()   # get unique values in events, i.e. null,1,2,3
-		
-		except KeyError:
 
-			data.waveform['id'] = NaN
-			return
-
-		filtered_unique_event_numbers = unique_event_numbers[~pd.isna(unique_event_numbers)] #filter out the nulls
-
-		for unique_event_number in filtered_unique_event_numbers: #for each number found in the list
-
-			event_start_time_ns = data.waveform.loc[data.waveform.id==unique_event_number].first_valid_index() #first timestamp for that event number
-			event_end_time_ns = data.waveform.loc[data.waveform.id==unique_event_number].last_valid_index() #last timestamp for that event number
-
-			#if yes, see if the last entry is marked as reported
-
-			subset_Unique_ID=data.waveform.loc[data.waveform.id==unique_event_number] # produces a list of all the ['reported'] values present
-			subset_Unique_Reported_Values = subset_Unique_ID.reported.unique()	# condenses list to be one of each value present
-
-			if True in subset_Unique_Reported_Values: # are any True values found in ['reported']?
-
-				subset_Unique_Grafana_ID_Values = subset_Unique_ID.grafanaID.unique() # get unique grafanaIDs
-				filtered_subset_Unique_Grafana_ID_Values = subset_Unique_Grafana_ID_Values[~pd.isna(subset_Unique_Grafana_ID_Values)] # exclude NaN's
-				
-				# **************This is the update block ************************
-				if len(subset_Unique_Reported_Values)>1: # yes, but some in the list arent reported=true, this is an update situation
-
-					if len(filtered_subset_Unique_Grafana_ID_Values) > 1:
-
-						pass # an error has occured here, we have multiple ID's for the same event
-
-					else:
-						grafanIDviaDF = str(int(filtered_subset_Unique_Grafana_ID_Values[0])) # grab the first grafanaID
-
-					# prepare payload for alert
-					alert_message = {
-						"start_ns"	:	None,
-						"stop_ns"	:	event_end_time_ns.value,
-						"grafanaID"	:	grafanIDviaDF,
-						"status"	:	'update'
+		if not DataStore.dict:
+			print('data DOESNT exist')
+		else:
+			print('data exists')
+			# print('time check', data.waveform.first_valid_index().value)
+			# print(DataStore.dict[0]['stop_ns'])
+			# print(data.waveform.first_valid_index().value-DataStore.dict[0]['stop_ns'])
+			if (data.waveform.first_valid_index().value)-DataStore.dict[0]['stop_ns'] > 2*settings.trigger_cooldown:
+				print('time exceeded!!')
+				DataStore.dict[0].update(
+						{
+							'status'		:	'stop'
 						}
+					)
+				# try:
+				send_alert(DataStore.dict[0])
+				# except:
+				# print("++++++++++++ error sending new event ++++++++++++")
+				pprint('!!!! POP{} !!!!'.format(0))
+				DataStore.dict.pop(0)
+			else:
+				print('time not exceeded')
 
-					statusCode = send_alert(alert_message) # send payload to communication routine
+		try:
+			unique_event_numbers = data.waveform.id.unique()   # get unique values in events, i.e. null,1,2,3
+		except KeyError as k:
+			data.waveform['id'] = NaN 
+			return
+		# debuging code here
+		# print('data.waveform',data.waveform)
+		# print('filter by anomalies',filter_dataframe_by_val(data.waveform,'anomalies',True))
+		filtered_unique_event_numbers = unique_event_numbers[~pd.isna(unique_event_numbers)] #filter out the nulls
+		# debuging code here
+		# print(DataStore.dict)
+		for event_IDs in filtered_unique_event_numbers:
+			event_start_time_ns = data.waveform.loc[data.waveform.id==event_IDs].first_valid_index() #first timestamp for that event number
+			event_stop_time_ns = data.waveform.loc[data.waveform.id==event_IDs].last_valid_index() #last timestamp for that event number
+			
+			# CLEANUP DATASTORE STUFF TO BE IMPLEMENTED IN TEH FUTURE TO PREVENT RUNAWAY MEMORY ISSUES
 
-					#check to see if status reports back 'updated'
-					if statusCode == 200:
-						# reported back 'update', so we update the dataframe with 'reported'=true and add the grafanaID to new entries
-						data.waveform.loc[event_start_time_ns:event_end_time_ns, 'grafanaID']= grafanIDviaDF
-						data.waveform.loc[event_start_time_ns:event_end_time_ns, 'reported'] = True
+			# Creating initial dictionary entry for the new data pull
+			DataStore.dict.append(
+				{
+					'id'			:	event_IDs,
+					'start_ns'		: 	event_start_time_ns.value,
+					'stop_ns'		: 	event_stop_time_ns.value,
+					'start_real'	:	event_start_time_ns,
+					'stop_real'		:	event_stop_time_ns,
+					'status'		:	'new'
+				}
+			)
+			# debuging code here
+			# pprint(len(DataStore.dict))
+			# pprint(DataStore.dict)
+
+			# if there is more than a signal entry, review to see if this needs to be combined
+
+			if len(DataStore.dict) >=2:		#checks to see if additional grouping needs to happen
+
+				# a series of checks that need to be performed to determine if events need
+				# to be combined or ignored 
+				if (
+					# below compares the last iteration == current iteration
+					DataStore.dict[-2]['id']==DataStore.dict[-1]['id']	# same ID, combined
+					or
+					DataStore.dict[-2]['stop_ns']>DataStore.dict[-1]['start_ns']	#overlap, combine
+					or
+					DataStore.dict[-2]['stop_ns'] + settings.trigger_cooldown > DataStore.dict[-1]['start_ns'] #cooldown not expired
+					):
+					pprint('updating')
+					# pprint(DataStore.dict[-1],width=1)
+					# pprint(DataStore.dict[-2],width=1)
 					
-					else:
-					
-						pass # bad status return, the code loop will keep trying to update until it leaves the window
-				
-				# ***************This is the stop flag block ****************************	
-				
-				if len(subset_Unique_Reported_Values)==1: # no other entries are not reported in the list
+					# we are able to update ths dictionary entry with new stop times
+					# we then tag the status as an update, which will extend the annotation window in grafana
+					DataStore.dict[-2].update(
+						{
+							'stop_ns'	: 	event_stop_time_ns.value,
+							'status'	:	'update'
+						})
+					pprint('updated')
 
-					grafanIDviaDF = str(int(filtered_subset_Unique_Grafana_ID_Values[0])) # grab the first grafanaID
-										
-					if grafanIDviaDF not in DataStore.report_ID_buffer:
+					# we remove the current entry that was absorbed into the previous entry
+					DataStore.dict.pop(-1)
+					# pprint(len(DataStore.dict))
+					# pprint(DataStore.dict[-1], width=1)
+					# try:
+					send_alert(DataStore.dict[-1])
+					# except:
+					# print("++++++++++ error sending update ++++++++++++++")
+					break
 
-						end_current_time_window = data.waveform.last_valid_index() #get the most recent influx data point
-						waiting_period_to_kill_event = settings.trigger_cooldown*3*10**-9
-						timeSinceEvent = float((end_current_time_window - event_end_time_ns).total_seconds()) #how long between the end of event and most recent point
-						
-						# check to see if X time has passed since last value
-						# if time has been exceeded
-						cooldown_expired_bool = timeSinceEvent > waiting_period_to_kill_event  # has the trigger cooldown been exceeded
-						if (cooldown_expired_bool):
-							#print('expired')
-							alert_message = {
-								"start_ns"		:	event_start_time_ns.value,
-								"stop_ns"		:	event_end_time_ns.value,
-								"status"		:	'stop',
-								"stop_real"		:	event_end_time_ns,
-								"grafanaID"		:	grafanIDviaDF,
-								"id"			:	unique_event_number								
-								}
-							# send finished flag here
-							statusCode = send_alert(alert_message) # send payload to communication routine
-							# if status = 200
-								#stuff
-							DataStore.report_ID_buffer.append(grafanIDviaDF)
-					
-						else:
+				# print(DataStore.dict[int(event_IDs-1)]['stop_ns'])
 
-							pass
+			# the new entry appears to be legit
+			print('+++++++++++++sending new alert for id', DataStore.dict[-1]['id'])
+			print('alert info being sent')
+			# pprint(DataStore.dict[-1], width=1)
+			# pprint(DataStore.dict,indent=4)
 
-					else:
-					
-						pass
-
-			# ********************** this is the new block *******************
-
-			else: # No true found in ['reported']
-				# not reported on, new report, send this alert up
-				alert_message = {
-					"start_ns"		:	event_start_time_ns.value,
-					"stop_ns"		:	event_end_time_ns.value,
-					"status"		:	'new',
-					"start_real"	:	event_start_time_ns,
-					"id"			:	unique_event_number
-					 }
-
-				statusCode, grafanaID = send_alert(alert_message)
-
-				if statusCode == 200: #check to ensure good info transmission to grafana
-					# mark ID number
-					data.waveform.loc[event_start_time_ns:event_end_time_ns, 'grafanaID']= int(grafanaID)
-					# mark it as reported=true
-					data.waveform.loc[event_start_time_ns:event_end_time_ns, 'reported'] = True
-				
-				else:
-				
-					pass # bad status return, the code loop will keep trying to update until it leaves the window
-
-	return
+			# send the new event to grafana
+			# try:
+			statusCode, grafanaID = send_alert(DataStore.dict[-1])
+			if statusCode == 200: #check to ensure good info transmission to grafana
+				# update the entry with the grafana ID tag so it can be updated later if needed
+				DataStore.dict[-1].update(
+				{
+					'grafanaID'		:	int(grafanaID)
+				}
+				)
+			# except:
+				# print("++++++++++ error sending new event ++++++++++++")
 
 
 
@@ -703,7 +707,8 @@ def run(station):
 		time.sleep(0.5)
 
 		task.LoopingCall(pull_medianValues).start(settings.config['k2s0']['median_update_rate_m']*60)
-		task.LoopingCall(event_publisher).start(settings.trigger_cooldown*10**-9)
+		task.LoopingCall(event_publisher).start(1)
+		# task.LoopingCall(event_publisher).start(settings.trigger_cooldown*10**-9)
 		task.LoopingCall(k2so_detector).start(settings.config['k2s0']['data_pull_rate_s'])
 		reactor.run()
 	

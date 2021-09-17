@@ -3,10 +3,7 @@ numpy
 PyWavelets
 scipy
 pandas
-os
-math
-time
 requests
-json
 twisted
-skimage
+scikit-image
+influxdb
