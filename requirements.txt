@@ -11,3 +11,16 @@ numpy
 scipy
 pandas
 statsmodels
+sys
+warnings
+numpy
+matplotlib
+os
+math
+time
+requests
+json
+influxdb
+twisted
+skimage
+pprint
