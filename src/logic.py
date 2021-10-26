@@ -690,8 +690,9 @@ def k2so_detector():
 	print(f'version:{1}','1121')
 	print(f'1. K2so Detector:\n{1}',data.waveform[1:5])
 	filter_waveform() if settings.config['filtering']['enabled'] == True else None
-	
+	print(f'1a. Filter Waveform complete')
 	detect_anomalies()
+	print(f'1b. detect_anomalies complete')
 
 	return
 
