@@ -376,6 +376,7 @@ def detect_anomalies():
 	signal_length = len(data.waveform['filtered'])
 
 	if settings.config['anomaly_detector'] == "tad":
+		print(f'data.waveform[\'filtered\']:\n{1}',data.waveform['filtered'])
 		anomalies = tad.anomaly_detect_vec(	x=data.waveform['filtered'],                   # pass the combined X+Y+Z waveform to the to the anomaly detector
 											alpha=.0001,                                   # only return points that are deemed be be anomalous with a 99.9% threshold of confidence
 											period=math.ceil(signal_length/sample_rate),   # 20% of the length of the signal, rounded up to an integer
@@ -590,7 +591,7 @@ def event_publisher():
 
 		try:
 			print(data.waveform[1:5])
-			time.sleep(2)
+			# time.sleep(2)
 			unique_event_numbers = data.waveform.id.unique()   # get unique values in events, i.e. null,1,2,3
 		except KeyError as k:
 			data.waveform['id'] = NaN 
@@ -687,11 +688,11 @@ def k2so_detector():
 	# pdb.set_trace()
 	data.waveform['filtered'] = data.waveform['x_y_z']
 	print(f'version:{1}','1121')
-	print(f'1. K2so Detector:\n{1}',data.waveform[1:5]);time.sleep(3)
+	print(f'1. K2so Detector:\n{1}',data.waveform[1:5])
 	filter_waveform() if settings.config['filtering']['enabled'] == True else None
-	print(f'1a. Filter Waveform complete');time.sleep(3)
+	print(f'1a. Filter Waveform complete')
 	detect_anomalies()
-	print(f'1b. detect_anomalies complete');time.sleep(3)
+	print(f'1b. detect_anomalies complete')
 
 	return
 
@@ -720,7 +721,7 @@ def run(station):
 		task.LoopingCall(event_publisher).start(1)
 		# task.LoopingCall(event_publisher).start(settings.trigger_cooldown*10**-9)
 		print('Test data: \n{1}\n', settings.config['k2s0']['data_pull_rate_s'])
-		time.sleep(5)
+		# time.sleep(5)
 		task.LoopingCall(k2so_detector).start(settings.config['k2s0']['data_pull_rate_s'])
 		reactor.run()
 	
