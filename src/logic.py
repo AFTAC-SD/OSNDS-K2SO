@@ -719,6 +719,7 @@ def run(station):
 		task.LoopingCall(pull_medianValues).start(settings.config['k2s0']['median_update_rate_m']*60)
 		task.LoopingCall(event_publisher).start(1)
 		# task.LoopingCall(event_publisher).start(settings.trigger_cooldown*10**-9)
+		print('Test data: \n{1}\n', settings.config['k2s0']['data_pull_rate_s'])
 		task.LoopingCall(k2so_detector).start(settings.config['k2s0']['data_pull_rate_s'])
 		reactor.run()
 	
