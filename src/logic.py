@@ -39,7 +39,7 @@ from src import file_handler as logic
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-from tad import tad
+import tad
 import scipy
 import pandas as pd
 import matplotlib.pyplot as plt
