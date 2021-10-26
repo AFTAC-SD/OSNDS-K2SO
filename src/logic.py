@@ -36,6 +36,7 @@ from numpy.core.numeric import NaN
 #from scipy.signal import waveforms, wavelets
 from src import file_handler as logic
 
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import tad
@@ -102,7 +103,7 @@ def initialize_k2so():
 	# All of k2so's settings (with the exception of which stations you;re running against) are assignable in the JSON file
 	# This function loads the JSON file and stores all of the user settings as a list, "config"
 	
-	station_configuration = str('config/k2so_configuration_osnds_'+settings.station+'.json')
+	station_configuration = str('config/k2so_configuration_osnds_'+str(settings.station)+'.json')
 
 	print('\nOSNDS Station {0}: Attempting to load configuration file'.format(settings.station)) if settings.debug == True else None
 
@@ -381,8 +382,7 @@ def detect_anomalies():
 											period=math.ceil(signal_length/sample_rate),   # 20% of the length of the signal, rounded up to an integer
 											direction="both",                              # look at both the positive and negative aspects of the signal 
 											e_value=True,                                  # add an additional column to the anoms output containing the expected value
-											plot=False)                                    # plot the seasonal and linear trends of the signal, as well as the residual (detrended) data
-		#TODO											
+											plot=False)                                    # plot the seasonal and linear trends of the signal, as well as the residual (detrended) data											
 		print(f'2. Detect anomalies:\n{1}',anomalies[1:5])
 
 	if settings.config['anomaly_detector'] == "global_shed_grubbs":
@@ -714,7 +714,7 @@ def run(station):
 			print('\nOSNDS Station {0}: K-2S0 is running normally on Process ID: {1}'.format(station,os.getpid()))
 
 		time.sleep(0.5)
-
+		# pdb.set_trace()
 		task.LoopingCall(pull_medianValues).start(settings.config['k2s0']['median_update_rate_m']*60)
 		task.LoopingCall(event_publisher).start(1)
 		# task.LoopingCall(event_publisher).start(settings.trigger_cooldown*10**-9)
