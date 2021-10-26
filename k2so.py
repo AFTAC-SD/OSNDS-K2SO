@@ -90,9 +90,9 @@ if __name__ == "__main__":
                                         \|_________|         """)
 
 	print("\nK-2S0 was collaboratively written by the great folks over in\nAFTAC/SI:\n")
-	print("    - James Stroup, R&D Portfolio Manager (AI/ML)")
-	print("    - Edmund Robbins, PhD Candidate (Applied Mathematics)")
-	print("    - Capt Samuel Stevens, Deputy Branch Chief (Partnering)")
+	print("    - James Stroup, Branch Chief, Exploitation and Develoment")
+	print("    - Edmund Robbins, R&D Portfolio Manager (AI/ML)")
+	print("    - Capt Samuel Stevens, Senior Research Engineer, Exploitation and Develoment")
 
 	#if debug_mode[0] in debug_bool:
 
