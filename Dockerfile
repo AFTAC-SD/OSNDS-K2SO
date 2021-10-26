@@ -38,7 +38,7 @@ RUN apt-get -y update
 RUN apt-get -y upgrade
 # COPY functions.py functions.py
 COPY k2so.py k2so.py
-COPY ./tad /usr/local/lib/python3.8/site-packages/tad
+COPY ./tad/. /usr/local/lib/python3.8/site-packages/tad
 COPY ./src ./src
 COPY ./config ./config
 # RUN pip3 install ./tad
