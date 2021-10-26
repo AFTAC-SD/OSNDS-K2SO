@@ -687,6 +687,7 @@ def k2so_detector():
 	pull_fromInflux()
 	# pdb.set_trace()
 	data.waveform['filtered'] = data.waveform['x_y_z']
+	print(f'version:{1}','1121')
 	print(f'1. K2so Detector:\n{1}',data.waveform[1:5])
 	filter_waveform() if settings.config['filtering']['enabled'] == True else None
 	
