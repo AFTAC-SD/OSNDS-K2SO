@@ -376,7 +376,7 @@ def detect_anomalies():
 	signal_length = len(data.waveform['filtered'])
 
 	if settings.config['anomaly_detector'] == "tad":
-		
+		tad.test()
 		anomalies = tad.anomaly_detect_vec(	x=data.waveform['filtered'],                   # pass the combined X+Y+Z waveform to the to the anomaly detector
 											alpha=.0001,                                   # only return points that are deemed be be anomalous with a 99.9% threshold of confidence
 											period=math.ceil(signal_length/sample_rate),   # 20% of the length of the signal, rounded up to an integer
