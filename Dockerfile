@@ -4,8 +4,8 @@
 FROM ubuntu:20.04
 FROM python:3.8-slim-buster
 # FROM nvcr.io/nvidia/l4t-base:r32.6.1
-ENV PATH="/root/miniconda3/bin:${PATH}"
-ARG PATH="/root/miniconda3/bin:${PATH}"
+# ENV PATH="/root/miniconda3/bin:${PATH}"
+# ARG PATH="/root/miniconda3/bin:${PATH}"
 
 # # PROXY SECTION START
 # ENV https_proxy=http://10.150.206.21:8080
@@ -21,11 +21,11 @@ RUN apt-get update
 WORKDIR /app
 RUN apt-get install -y vim
 RUN apt-get install -y curl
-RUN curl -LJO https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh
-RUN bash Miniconda3-py38_4.10.3-Linux-x86_64.sh -b
-RUN rm -f Miniconda3-latest-Linux-x86_64.sh 
+# RUN curl -LJO https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh
+# RUN bash Miniconda3-py38_4.10.3-Linux-x86_64.sh -b
+# RUN rm -f Miniconda3-latest-Linux-x86_64.sh 
 COPY requirements.txt requirements.txt
-RUN conda install pip
+# RUN conda install pip
 RUN apt-get install -y python-dev
 RUN apt-get install -y python3-dev
 RUN apt install -y build-essential
@@ -42,6 +42,7 @@ COPY ./tad ./tad
 COPY ./src ./src
 COPY ./config ./config
 RUN pip3 install ./tad
+ENTRYPOINT ["/bin/bash", "-l", "-c"]
 # ENTRYPOINT [ "/bin/bash" ]
-ENTRYPOINT [ "python3", "k2so.py", "-s" ]
+# ENTRYPOINT [ "python3", "k2so.py", "-s" ]
 # CMD echo "Test"

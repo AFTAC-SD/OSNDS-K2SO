@@ -29,7 +29,8 @@
 # We will soon be adding a "-d" argument to the scripts execution that will force K2SO to operate in a DEBUG MODE. This mode will provide the
 # end user with a log of K-2SO's output labed by Station ID. This feature is still in work. 
 
-
+import pdb
+import sys
 import warnings
 from numpy.core.numeric import NaN
 #from scipy.signal import waveforms, wavelets
@@ -381,22 +382,27 @@ def detect_anomalies():
 											direction="both",                              # look at both the positive and negative aspects of the signal 
 											e_value=True,                                  # add an additional column to the anoms output containing the expected value
 											plot=False)                                    # plot the seasonal and linear trends of the signal, as well as the residual (detrended) data
+		#TODO											
+		print(f'2. Detect anomalies:\n{1}',anomalies[1:5])
 
 	if settings.config['anomaly_detector'] == "global_shed_grubbs":
-
 		None
 
 	if settings.config['anomaly_detector'] == "global_shed_grubbs":
-
 		None
 
 
 	print('\nOSNDS Station {0}: K-2S0 detected {1} anomalies'.format(settings.station, len(anomalies))) if settings.debug == True else None
 
 	if len(anomalies) > settings.config['k2s0']['anomaly_threshold']:    # serves as a basic filter for random suprious "anomalies" that can arise from any of the detection algorithims
+		print(f'3. Anomaly length test:\n{1}',len(anomalies))
 
 		data.waveform['anomalies'] = anomalies
+		print(f'4. Waveform anomalies:\n{1}',data.waveform['anomalies'][1:5])
+
 		data.waveform['anomalies'] = data.waveform['anomalies'].notna()  # replaces NA values with boolean False, True values stay True
+		print(f'5. Waveform anomalies replace NA values:\n{1}',data.waveform['anomalies'])[1:5]
+
 
 		error_handling()
 		parse_anomalies()
@@ -433,6 +439,8 @@ def filter_dataframe_by_val(df,dict,val):
 def parse_anomalies():	#just assigns event_ID to the events
 
 	anomalies_found_table = filter_dataframe_by_val(data.waveform,'anomalies',True)
+	print(f'6. Parse_anomalies, anomalies found table:\n{1}',anomalies_found_table[1:5])
+
 	for index, loop_value in data.waveform.groupby([(data.waveform.anomalies != data.waveform.anomalies.shift()).cumsum()]):
 
 		if loop_value.anomalies.all() == True:
@@ -582,6 +590,8 @@ def event_publisher():
 				print('time not exceeded')
 
 		try:
+			print(data.waveform[1:5])
+			time.sleep(2)
 			unique_event_numbers = data.waveform.id.unique()   # get unique values in events, i.e. null,1,2,3
 		except KeyError as k:
 			data.waveform['id'] = NaN 
@@ -674,11 +684,10 @@ def event_publisher():
 
 
 def k2so_detector():
-
 	pull_fromInflux()
-	
+	# pdb.set_trace()
 	data.waveform['filtered'] = data.waveform['x_y_z']
-
+	print(f'1. K2so Detector:\n{1}',data.waveform[1:5])
 	filter_waveform() if settings.config['filtering']['enabled'] == True else None
 	
 	detect_anomalies()

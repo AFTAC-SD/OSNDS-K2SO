@@ -27,7 +27,7 @@
 # end user with a log of K-2SOs output labed by Station ID. This feature is still in work. 
 #
 
-
+# import pdb
 import sys, os, time, argparse
 from multiprocessing import Pool
 
@@ -44,7 +44,7 @@ def k2so(station):
 
 # The main start-up script for K-2SO. This function retrieves the arguments passed to it by the user and then maps out k2so to each sensor
 if __name__ == "__main__":
-
+	# pdb.set_trace()
 	os.system('cls' if os.name == 'nt' else 'clear')
 	
 	parser = argparse.ArgumentParser(prog="K-2SO", 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 	try:
 
 		print("\n+++++++++++++++++++++[All Stations Log]++++++++++++++++++++++++")
-
+		# pdb.set_trace()
 		with Pool(processes=len(stations)) as p:
 			p.map(k2so, stations)  # need to add logic that passes DEBUG state the k2_helper
 
