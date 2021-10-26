@@ -688,11 +688,11 @@ def k2so_detector():
 	# pdb.set_trace()
 	data.waveform['filtered'] = data.waveform['x_y_z']
 	print(f'version:{1}','1121')
-	print(f'1. K2so Detector:\n{1}',data.waveform[1:5])
+	print(f'1. K2so Detector:\n{1}',data.waveform[1:5]);time.sleep(3)
 	filter_waveform() if settings.config['filtering']['enabled'] == True else None
-	print(f'1a. Filter Waveform complete')
+	print(f'1a. Filter Waveform complete');time.sleep(3)
 	detect_anomalies()
-	print(f'1b. detect_anomalies complete')
+	print(f'1b. detect_anomalies complete');time.sleep(3)
 
 	return
 
