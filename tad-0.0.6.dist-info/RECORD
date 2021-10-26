@@ -1,0 +1,17 @@
+tad-0.0.6.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+tad-0.0.6.dist-info/LICENSE,sha256=tAkwu8-AdEyGxGoSvJ2gVmQdcicWw3j1ZZueVV74M-E,11357
+tad-0.0.6.dist-info/METADATA,sha256=Yqm3kw1EOI9ovTjDEiIoc5deyV1dRDs_7vBvf_JFFZY,974
+tad-0.0.6.dist-info/RECORD,,
+tad-0.0.6.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+tad-0.0.6.dist-info/WHEEL,sha256=S8S5VL-stOTSZDYxHyf0KP7eds0J72qrK0Evu3TfyAY,92
+tad-0.0.6.dist-info/top_level.txt,sha256=r5xANApdSDLirNZ1BsSlZUDPtKZa9gbllcMCgaj3YC4,4
+tad/__init__.py,sha256=MOmD7GrX9CxgnbvhpSigZtJCfyixn8Tf0RIJPDZvo-g,340
+tad/__pycache__/__init__.cpython-38.pyc,,
+tad/__pycache__/anomaly_detect_ts.cpython-38.pyc,,
+tad/__pycache__/anomaly_detect_vec.cpython-38.pyc,,
+tad/__pycache__/dynamic_cusum.cpython-38.pyc,,
+tad/__pycache__/settings.cpython-38.pyc,,
+tad/anomaly_detect_ts.py,sha256=k_fryIPFhSSztcv2eJ14jtxUZuaWePDlHttVuh7miio,22481
+tad/anomaly_detect_vec.py,sha256=Pvkwm4wPPtK087zvN5gJVZ8d38C86i2w6yivwTOwdbc,6969
+tad/dynamic_cusum.py,sha256=yY1QcdUa4xwCsGNO9BoiKjRwh6rTMy11QLlfL9bHhUM,927
+tad/settings.py,sha256=uDUrauD-fJXb2urKbku_6ISiXkRlcr0AMgPfcoBgU3c,755

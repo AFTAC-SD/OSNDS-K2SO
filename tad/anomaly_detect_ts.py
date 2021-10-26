@@ -141,8 +141,6 @@ import pandas as pd
 import datetime
 import statsmodels.api as sm
 import logging
-from statsmodels import robust
-
 
 
 logger = logging.getLogger(__name__)
@@ -565,7 +563,7 @@ def _detect_anoms(data, k=0.49, alpha=0.05, num_obs_per_period=None,
         else:
             ares = data.median() - data
 
-        ares = ares / robust.mad(data.dropna())
+        ares = ares / data.mad()
 
         tmp_anom_index = ares[ares.values == ares.max()].index
         cand = pd.Series(data.loc[tmp_anom_index], index=tmp_anom_index)

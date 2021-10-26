@@ -38,7 +38,8 @@ RUN apt-get -y update
 RUN apt-get -y upgrade
 # COPY functions.py functions.py
 COPY k2so.py k2so.py
-COPY ./tad/tad/. /usr/local/lib/python3.8/site-packages/tad
+COPY ./tad/. ./tad/
+COPY ./tad-0.0.6.dist-info/. ./tad-dist/.
 # RUN pip install tad
 COPY ./src ./src
 COPY ./config ./config
