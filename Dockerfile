@@ -43,6 +43,6 @@ COPY ./src ./src
 COPY ./config ./config
 # RUN pip3 install ./tad
 # ENTRYPOINT ["/bin/bash", "-l", "-c"]
-# ENTRYPOINT [ "/bin/bash" ]
-ENTRYPOINT [ "python3", "k2so.py", "-s", "1" ]
-# CMD echo "Test"
+ENTRYPOINT [ "/bin/bash" ]
+# ENTRYPOINT [ "python3", "k2so.py", "-s", "1" ]
+CMD ["python3", "k2so.py","-s","1"]
