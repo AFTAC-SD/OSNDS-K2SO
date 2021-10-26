@@ -29,7 +29,7 @@
 # We will soon be adding a "-d" argument to the scripts execution that will force K2SO to operate in a DEBUG MODE. This mode will provide the
 # end user with a log of K-2SO's output labed by Station ID. This feature is still in work. 
 
-import pdb
+# import pdb
 import sys
 import warnings
 from numpy.core.numeric import NaN
@@ -39,7 +39,7 @@ from src import file_handler as logic
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-import tad
+from tad import tad
 import scipy
 import pandas as pd
 import matplotlib.pyplot as plt
