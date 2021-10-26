@@ -41,7 +41,7 @@ COPY k2so.py k2so.py
 COPY ./tad ./tad
 COPY ./src ./src
 COPY ./config ./config
-RUN pip3 install ./tad
+# RUN pip3 install ./tad
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
 # ENTRYPOINT [ "/bin/bash" ]
 # ENTRYPOINT [ "python3", "k2so.py", "-s" ]
