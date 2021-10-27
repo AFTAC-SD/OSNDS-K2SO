@@ -141,7 +141,10 @@ import pandas as pd
 import datetime
 import statsmodels.api as sm
 import logging
-
+import time
+# print(sm)
+# print(sm.__version__)
+# time.sleep(5)
 
 logger = logging.getLogger(__name__)
 
@@ -408,6 +411,9 @@ def _get_decomposed_data_tuple(data, num_obs_per_period):
       num_obs_per_period : int
         the number of observations in each period
     """
+    # print(f'data:\n{data[1:5]}\n')
+    # print(f'num_obs_per_period:\n{num_obs_per_period}\n')
+    # time.sleep(3)
     decomposed = sm.tsa.seasonal_decompose(
         data, freq=num_obs_per_period, two_sided=False)
     smoothed = data - decomposed.resid.fillna(0)

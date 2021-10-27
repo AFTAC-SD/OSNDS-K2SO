@@ -1,26 +1,12 @@
-multiprocess
-numpy
-PyWavelets
-scipy
-pandas
-requests
-twisted
-scikit-image
-influxdb
-numpy
-scipy
-pandas
-statsmodels
-sys
-warnings
-numpy
-matplotlib
-os
-math
-time
-requests
-json
-influxdb
-twisted
-skimage
-pprint
+multiprocess == 0.70.12.2
+numpy == 1.21.3
+PyWavelets == 1.1.1
+scipy == 1.7.1
+pandas == 1.3.4
+requests == 2.26.0
+twisted == 21.7.0
+influxdb == 5.3.1
+matplotlib == 3.4.3
+statsmodels == 0.12.2
+scikit-image == 0.18.3
+

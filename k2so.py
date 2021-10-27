@@ -28,8 +28,14 @@
 #
 
 # import pdb
+import multiprocessing
 import sys, os, time, argparse
 from multiprocessing import Pool
+print(sys)
+print(os)
+print(time)
+print(argparse)
+print(multiprocessing)
 
 #sys.path.insert(0, r'/anomaly_detection/k2s0_python/src')
 from src import logic as k2
@@ -114,6 +120,7 @@ if __name__ == "__main__":
 		# pdb.set_trace()
 		with Pool(processes=len(stations)) as p:
 			p.map(k2so, stations)  # need to add logic that passes DEBUG state the k2_helper
+		# k2so(5)
 
 	except KeyboardInterrupt as e:
 
@@ -134,3 +141,4 @@ if __name__ == "__main__":
 		
 		#os.system('cls' if os.name == 'nt' else 'clear')
 		sys.exit()
+#version 1

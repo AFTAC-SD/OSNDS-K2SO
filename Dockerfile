@@ -16,7 +16,22 @@ FROM python:3.8-slim-buster
 # # RUN export https_proxy=http://10.150.206.21:8080
 # # PROXY SECTION END
 
+# ENV PATH="/root/miniconda3/bin:${PATH}"
+# ARG PATH="/root/miniconda3/bin:${PATH}"
+# RUN apt-get update
 
+# RUN apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
+# RUN wget \
+#     https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+#     && mkdir /root/.conda \
+#     && bash Miniconda3-latest-Linux-x86_64.sh -b \
+#     && rm -f Miniconda3-latest-Linux-x86_64.sh
+# RUN conda install -c conda-forge influxdb
+# RUN conda install scikit-image
+# RUN conda install -c conda-forge pandas
+# RUN conda install -c conda-forge statsmodels
+# RUN conda install -c anaconda twisted
 RUN apt-get update
 WORKDIR /app
 RUN apt-get install -y vim
@@ -31,6 +46,7 @@ RUN apt-get install -y python3-dev
 RUN apt install -y build-essential
 RUN apt-get install -y libssl-dev
 RUN pip3 install service_identity
+# COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 # RUN conda install --yes --file requirements.txt
 # RUN while read requirement; do conda install --yes $requirement; done < requirements.txt
@@ -47,4 +63,4 @@ COPY ./config ./config
 # ENTRYPOINT ["/bin/bash", "-l", "-c"]
 # ENTRYPOINT [ "/bin/bash" ]
 # ENTRYPOINT [ "python3", "k2so.py", "-s", "1" ]
-CMD ["python3", "k2so.py","-s","1"]
+CMD ["python3", "k2so.py","-s", "1"]

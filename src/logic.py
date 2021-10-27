@@ -32,24 +32,43 @@
 # import pdb
 import sys
 import warnings
+import numpy
 from numpy.core.numeric import NaN
 #from scipy.signal import waveforms, wavelets
 from src import file_handler as logic
-
-
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
 import tad
 import scipy
 import pandas as pd
 import matplotlib.pyplot as plt
 import os, math, time, requests, json
-
 from influxdb import DataFrameClient
 from twisted.internet import task, reactor
-
+import skimage
 from skimage.restoration import denoise_wavelet, estimate_sigma
+import pprint
 from pprint import pprint
+
+# print(sys)
+# print(warnings)
+# print(numpy)
+# print(tad)
+# print(scipy)
+# print(pd)
+# print(plt)
+# print(os)
+# print(math)
+# print(time)
+# print(requests)
+# print(json)
+# print(DataFrameClient)
+# print(task)
+# print(reactor)
+# print(skimage)
+# print(pprint)
+
+
+
 
 pd.set_option('display.max_rows', 4000)
 
@@ -309,7 +328,7 @@ def filter_waveform():
 
 	# Scipy's median filter applys a median filter to the input array using a local window-size given by "kernel_size". The array will automatically be zero-padded.
 	# Median filters are a great way to reduce higher-frequency noise, but you should be mindful that they essentially serve as a low-pass filter with a low, gaussian roll-off factor. 
-
+	# print(f'entering filter_waveform')
 	if settings.debug == True:
 
 		start = time.time()   # get start time
@@ -376,14 +395,14 @@ def detect_anomalies():
 	signal_length = len(data.waveform['filtered'])
 
 	if settings.config['anomaly_detector'] == "tad":
-		print(f'data.waveform[\'filtered\']:\n{1}',data.waveform['filtered'])
+		# print(f'data.waveform[\'filtered\']:\n{1}',data.waveform['filtered'][1:5])
 		anomalies = tad.anomaly_detect_vec(	x=data.waveform['filtered'],                   # pass the combined X+Y+Z waveform to the to the anomaly detector
 											alpha=.0001,                                   # only return points that are deemed be be anomalous with a 99.9% threshold of confidence
 											period=math.ceil(signal_length/sample_rate),   # 20% of the length of the signal, rounded up to an integer
 											direction="both",                              # look at both the positive and negative aspects of the signal 
 											e_value=True,                                  # add an additional column to the anoms output containing the expected value
 											plot=False)                                    # plot the seasonal and linear trends of the signal, as well as the residual (detrended) data											
-		print(f'2. Detect anomalies:\n{1}',anomalies[1:5])
+		# print(f'2. Detect anomalies:\n{1}',anomalies[1:5])
 
 	if settings.config['anomaly_detector'] == "global_shed_grubbs":
 		None
@@ -395,13 +414,13 @@ def detect_anomalies():
 	print('\nOSNDS Station {0}: K-2S0 detected {1} anomalies'.format(settings.station, len(anomalies))) if settings.debug == True else None
 
 	if len(anomalies) > settings.config['k2s0']['anomaly_threshold']:    # serves as a basic filter for random suprious "anomalies" that can arise from any of the detection algorithims
-		print(f'3. Anomaly length test:\n{1}',len(anomalies))
+		# print(f'3. Anomaly length test:\n{1}',len(anomalies))
 
 		data.waveform['anomalies'] = anomalies
-		print(f'4. Waveform anomalies:\n{1}',data.waveform['anomalies'][1:5])
+		# print(f'4. Waveform anomalies:\n{1}',data.waveform['anomalies'][1:5])
 
 		data.waveform['anomalies'] = data.waveform['anomalies'].notna()  # replaces NA values with boolean False, True values stay True
-		print(f'5. Waveform anomalies replace NA values:\n{1}',data.waveform['anomalies'])[1:5]
+		# print(f'5. Waveform anomalies replace NA values:\n{1}',data.waveform['anomalies'])[1:5]
 
 
 		error_handling()
@@ -439,7 +458,7 @@ def filter_dataframe_by_val(df,dict,val):
 def parse_anomalies():	#just assigns event_ID to the events
 
 	anomalies_found_table = filter_dataframe_by_val(data.waveform,'anomalies',True)
-	print(f'6. Parse_anomalies, anomalies found table:\n{1}',anomalies_found_table[1:5])
+	# print(f'6. Parse_anomalies, anomalies found table:\n{1}',anomalies_found_table[1:5])
 
 	for index, loop_value in data.waveform.groupby([(data.waveform.anomalies != data.waveform.anomalies.shift()).cumsum()]):
 
@@ -561,11 +580,13 @@ def send_alert(alert_message):
 def event_publisher():
 
 	# event publisher operates by using a list of dictionaries.  each detected event is group into a single entry in the list.
-
+	# print(f'entering event publisher routine')
+	# print(f'data.waveform:\n{1}\n',data.waveform[1:5])
+	# print(f'data.waveform.empty?:\n{1}\n',data.waveform.empty)
 	if data.waveform.empty:
 		pass
 	else:
-
+		# print(f'DataStore.dict',DataStore.dict)
 		if not DataStore.dict:
 			print('data DOESNT exist')
 		else:
@@ -680,19 +701,21 @@ def event_publisher():
 				)
 			# except:
 				# print("++++++++++ error sending new event ++++++++++++")
+	time.sleep(2)
 
 
 
 def k2so_detector():
+	# print(f'entering k2so detector def..')
+	# print(f'pulling from influx')
 	pull_fromInflux()
 	# pdb.set_trace()
 	data.waveform['filtered'] = data.waveform['x_y_z']
-	print(f'version:{1}','1121')
-	print(f'1. K2so Detector:\n{1}',data.waveform[1:5])
+	# print(f'1. data.waveform[\'filtered\']:\n{1}',data.waveform[1:5])
 	filter_waveform() if settings.config['filtering']['enabled'] == True else None
-	print(f'1a. Filter Waveform complete')
+	# print(f'1a. Filter Waveform complete')
 	detect_anomalies()
-	print(f'1b. detect_anomalies complete')
+	# print(f'1b. detect_anomalies complete')
 
 	return
 
@@ -720,7 +743,7 @@ def run(station):
 		task.LoopingCall(pull_medianValues).start(settings.config['k2s0']['median_update_rate_m']*60)
 		task.LoopingCall(event_publisher).start(1)
 		# task.LoopingCall(event_publisher).start(settings.trigger_cooldown*10**-9)
-		print('Test data: \n{1}\n', settings.config['k2s0']['data_pull_rate_s'])
+		# print('settings.config[\'k2s0\'][\'data_pull_rate_s\']: \n{1}\n', settings.config['k2s0']['data_pull_rate_s'])
 		# time.sleep(5)
 		task.LoopingCall(k2so_detector).start(settings.config['k2s0']['data_pull_rate_s'])
 		reactor.run()
@@ -730,3 +753,4 @@ def run(station):
 		print('\nOSNDS Station {0}: K-2S0 will stop monitoring this station'.format(settings.station))
 
 		pass
+#version 3
