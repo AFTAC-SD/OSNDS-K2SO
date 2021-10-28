@@ -553,6 +553,7 @@ def send_alert(alert_message):
 			"stop_real":	alert_message['stop_real'].strftime("%d-%b-%Y (%H:%M:%S.%f)-UTC"), 	#stop stopreal
 			"rss_time"	: 	alert_message['start_real'].strftime("%a, %d %b %Y %H:%M:%S {}").format(utc_local_offset), # new startreal
 			"grafana_id"		:	alert_message['grafanaID'],
+			"vpp"		:	alert_message['score']
 		}
 		
 	
