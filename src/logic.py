@@ -607,13 +607,9 @@ def event_publisher():
 			# print(data.waveform.first_valid_index().value-DataStore.dict[0]['stop_ns'])
 			if (data.waveform.first_valid_index().value)-DataStore.dict[0]['stop_ns'] > 2*settings.trigger_cooldown:
 				print('time exceeded!!')
-				DataStore.dict[0].update(
-						{
-							'status'		:	'stop'
-						}
-					)
+
 				# try:
-				send_alert(DataStore.dict[0])
+
 
 				##############################################################################
 				############ PUMPKIN CHUNKIN VPP RECORD AND SEND #############################
@@ -639,7 +635,13 @@ def event_publisher():
 				############################################################################
 				############### PUMPKIN CHUNKIN VPP RECORD AND SEND STOP ###################
 				############################################################################
-
+				DataStore.dict[0].update(
+						{
+							'status'		:	'stop',
+							"score"		:	int(vpp),
+						}
+				)
+				send_alert(DataStore.dict[0])
 				# except:
 				# print("++++++++++++ error sending new event ++++++++++++")
 				pprint('!!!! POP{} !!!!'.format(0))
