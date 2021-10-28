@@ -501,6 +501,16 @@ def parse_anomalies():	#just assigns event_ID to the events
 
 
 
+# def pumpkin_score_transmit(start,stop):
+# 	print("here")
+# 	influx.query_median = str("SELECT median(x), median(y), median(z) FROM {0}.{1}.{2} WHERE time between {3} and {4} AND data='{4}';".format(settings.config['influx']['database'], settings.config['influx']['retention'], settings.config['influx']['measurment'], str(settings.config['k2s0']['median_window_m']), settings.config['k2s0']['data_stream']))
+# 	response=influx.client.query(influx.query_median)		
+# 	median_values = response[settings.config['influx']['measurment']]              # get the "livestream" dataframe from the returned list of dataframes "response"
+# 	data.med_x = median_values.loc[:,'median'][0]       # get the median of X from the dataframe
+# 	data.med_y = median_values.loc[:,'median_1'][0]     # get the median of Y from the dataframe
+# 	data.med_z = median_values.loc[:,'median_2'][0]     # get the median of Z from the dataframe
+# 	print()
+
 def send_alert(alert_message):
 
 	alert_payload = {}
@@ -532,7 +542,7 @@ def send_alert(alert_message):
 		}
 	
 	if alert_message['status'] == 'stop':
-
+		# pumpkin_score_transmit(alert_message['start_ns'],alert_message['stop_ns'])
 		alert_payload = {
 			"station"	:	int(settings.station),
 			"k2so_id"	:	alert_message['id'],    # unique event ID
@@ -544,6 +554,7 @@ def send_alert(alert_message):
 			"rss_time"	: 	alert_message['start_real'].strftime("%a, %d %b %Y %H:%M:%S {}").format(utc_local_offset), # new startreal
 			"grafana_id"		:	alert_message['grafanaID'],
 		}
+		
 	
 	try:
 
@@ -603,6 +614,32 @@ def event_publisher():
 					)
 				# try:
 				send_alert(DataStore.dict[0])
+
+				##############################################################################
+				############ PUMPKIN CHUNKIN VPP RECORD AND SEND #############################
+				##############################################################################
+				# print(f"ID: {DataStore.dict[0]}")
+				# print(f"ID: {DataStore.dict[0]['id']}")
+				event_start_time_ns = data.waveform.loc[data.waveform.id==DataStore.dict[0]['id']].first_valid_index() #first timestamp for that event number
+				event_stop_time_ns = data.waveform.loc[data.waveform.id==DataStore.dict[0]['id']].last_valid_index() #last timestamp for that event number
+				df_slice = data.waveform[event_start_time_ns:event_stop_time_ns]
+				print(f"test date frame:\n{df_slice}\n")
+				xyz = df_slice["x_y_z"]
+				max_xyz = xyz.max()
+				min_xyz = xyz.min()
+				print(max_xyz, min_xyz)
+				vpp = (max_xyz-min_xyz)*100
+				print(vpp)
+				vpp_payload = {
+					"score"		:	int(vpp),
+					"user_id"	:	"auto",    # unique event ID
+				}
+				pumpkin_chunkin_vpp_url = "https://config.osnds.net/pumpkin-contest/postJSON"
+				vpp_post = requests.post(pumpkin_chunkin_vpp_url, json=vpp_payload, timeout = 1)
+				############################################################################
+				############### PUMPKIN CHUNKIN VPP RECORD AND SEND STOP ###################
+				############################################################################
+
 				# except:
 				# print("++++++++++++ error sending new event ++++++++++++")
 				pprint('!!!! POP{} !!!!'.format(0))
@@ -626,7 +663,6 @@ def event_publisher():
 		for event_IDs in filtered_unique_event_numbers:
 			event_start_time_ns = data.waveform.loc[data.waveform.id==event_IDs].first_valid_index() #first timestamp for that event number
 			event_stop_time_ns = data.waveform.loc[data.waveform.id==event_IDs].last_valid_index() #last timestamp for that event number
-			
 			# CLEANUP DATASTORE STUFF TO BE IMPLEMENTED IN TEH FUTURE TO PREVENT RUNAWAY MEMORY ISSUES
 
 			# Creating initial dictionary entry for the new data pull
